@@ -37,7 +37,6 @@ COVER_SCHEMA = vol.Schema({
     vol.Required(CONF_STOP): cv.string,
     vol.Optional(CONF_SETPOSITION_ADDRESS): cv.string,
     vol.Optional(CONF_GETPOSITION_ADDRESS): cv.string,
-    vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
 })
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -58,7 +57,7 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
         KNXMultiAddressDevice.__init__(
             self, hass, config,
             ['updown', 'stop'],  # required
-            ['setposition', 'getposition']  # optional
+            optional=['setposition', 'getposition']
         )
 
         self._hass = hass
