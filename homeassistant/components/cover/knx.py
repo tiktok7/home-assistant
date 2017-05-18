@@ -3,12 +3,10 @@ Support for KNX covers.
 
 cover:
   - platform: knx
-    covers:
-      shutter_room2:
-        updown_address: 9/0/0
-        stop_address: 9/0/1
-        setposition_address: 9/0/3
-        getposition_address: 9/1/4
+    updown_address: 9/0/0
+    stop_address: 9/0/1
+    setposition_address: 9/0/3
+    getposition_address: 9/0/4
 
 """
 import logging
@@ -19,7 +17,7 @@ from homeassistant.components.cover import (
     CoverDevice, PLATFORM_SCHEMA, ATTR_POSITION
 )
 from homeassistant.components.knx import (KNXConfig, KNXMultiAddressDevice)
-from homeassistant.const import (CONF_NAME, CONF_COVERS)
+from homeassistant.const import (CONF_NAME)
 import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
@@ -32,15 +30,12 @@ CONF_GETPOSITION_ADDRESS = 'getposition_address'
 DEFAULT_NAME = 'KNX Cover'
 DEPENDENCIES = ['knx']
 
-COVER_SCHEMA = vol.Schema({
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_UPDOWN): cv.string,
     vol.Required(CONF_STOP): cv.string,
     vol.Optional(CONF_SETPOSITION_ADDRESS): cv.string,
     vol.Optional(CONF_GETPOSITION_ADDRESS): cv.string,
-})
-
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_COVERS): vol.Schema({cv.slug: COVER_SCHEMA}),
+    vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
 })
 
 
