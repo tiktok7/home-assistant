@@ -64,11 +64,6 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
         return True
 
     @property
-    def name(self):
-        """Return the name of the cover."""
-        return self._name
-
-    @property
     def is_closed(self):
         """Return if the cover is closed."""
         if self.current_cover_position is not None:
