@@ -85,6 +85,11 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
         """Return the position we are trying to reach. 0 - 100"""
         return self._target_pos
 
+    def set_int_value(self, name, value, num_bytes=1):
+        # KNX packets are big endian
+        b_value = value.to_bytes(num_bytes, byteorder='big')
+        self.set_value(b_value)
+
     def set_cover_position(self, **kwargs):
         """Set new target position."""
         position = kwargs.get(ATTR_POSITION)
@@ -92,23 +97,24 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
             return
 
         self._target_pos = position
-        self.set_value('setposition', position)
+        self.set_int_value('setposition', position)
         _LOGGER.debug("Set target position to %i", position)
 
     def update(self):
         """Update device state."""
         super().update()
-
-        self._current_pos = self.value('position')
+        self._current_pos = int.from_bytes(
+            self.value('position'), byteorder='big'
+        )
 
     def open_cover(self, **kwargs):
         """Open the cover."""
-        self.set_value('updown', 0)
+        self.set_int_value('updown', 0)
 
     def close_cover(self, **kwargs):
         """Close the cover."""
-        self.set_value('updown', 1)
+        self.set_int_value('updown', 1)
 
     def stop_cover(self, **kwargs):
         """Stop the cover movement."""
-        self.set_value('stop', 1)
+        self.set_int_value('stop', 1)
