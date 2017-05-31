@@ -103,7 +103,8 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
     def update(self):
         """Update device state."""
         super().update()
-        self._current_pos = self.value('position')
+        self._current_pos = self.value('getposition')
+        _LOGGER.debug("position = %i", self._current_pos)
 
     def open_cover(self, **kwargs):
         """Open the cover."""
