@@ -108,12 +108,15 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
 
     def open_cover(self, **kwargs):
         """Open the cover."""
+        _LOGGER.debug("open: updown = 0")
         self.set_int_value('updown', 0)
 
     def close_cover(self, **kwargs):
         """Close the cover."""
+        _LOGGER.debug("open: updown = 1")
         self.set_int_value('updown', 1)
 
     def stop_cover(self, **kwargs):
         """Stop the cover movement."""
+        _LOGGER.debug("stop: stop = 0")
         self.set_int_value('stop', 1)
