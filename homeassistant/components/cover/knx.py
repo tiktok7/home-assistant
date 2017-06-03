@@ -88,15 +88,17 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
     def set_int_value(self, name, value, num_bytes=1):
         # KNX packets are big endian
         b_value = value.to_bytes(num_bytes, byteorder='big')
-        self.set_value(name, b_value)
+        self.set_value(name, list(b_value))
 
     def get_int_value(self, name):
         # KNX packets are big endian
-        b_value = self.value(name)
-        value = None
-        if isinstance(value, bytes):
-            value = int.from_bytes(b_value, byteorder='big')
-        return value
+        sum = 0
+        raw_value = self.value(name)
+        if isinstance(raw_value, list):
+            for val in raw_value:
+                sum *= 256
+                sum += val
+        return sum
 
     def set_cover_position(self, **kwargs):
         """Set new target position."""
@@ -106,27 +108,31 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
 
         self._target_pos = position
         self.set_int_value('setposition', position)
-        _LOGGER.debug("Set target position to %i", position)
+        _LOGGER.debug(
+            "{}: Set target position to {:d}".format(
+                self.name, position
+            )
+        )
 
     def update(self):
         """Update device state."""
         super().update()
         value = self.get_int_value('getposition')
-        if value:
+        if value is not None:
             self._current_pos = value
-        _LOGGER.debug("position = %i", self.value)
+        _LOGGER.debug("{}: position = {}".format(self.name, value))
 
     def open_cover(self, **kwargs):
         """Open the cover."""
-        _LOGGER.debug("open: updown = 0")
+        _LOGGER.debug("{}: open: updown = 0".format(self.name))
         self.set_int_value('updown', 0)
 
     def close_cover(self, **kwargs):
         """Close the cover."""
-        _LOGGER.debug("open: updown = 1")
+        _LOGGER.debug("{}: open: updown = 1".format(self.name))
         self.set_int_value('updown', 1)
 
     def stop_cover(self, **kwargs):
         """Stop the cover movement."""
-        _LOGGER.debug("stop: stop = 0")
+        _LOGGER.debug("{}: stop: stop = 1".format(self.name))
         self.set_int_value('stop', 1)

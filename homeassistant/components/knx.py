@@ -213,9 +213,6 @@ class KNXMultiAddressDevice(Entity):
     to be controlled by multiple group addresses.
     """
 
-    names = {}
-    values = {}
-
     def __init__(self, hass, config, required, optional=None):
         """Initialize the device.
 
@@ -225,6 +222,9 @@ class KNXMultiAddressDevice(Entity):
         brightness_address: 0/0/2
         """
         from knxip.core import parse_group_address, KNXException
+
+        self.names = {}
+        self.values = {}
 
         self._config = config
         self._state = False
@@ -241,6 +241,7 @@ class KNXMultiAddressDevice(Entity):
                     "Required KNX group address %s missing", paramname)
                 raise KNXException(
                     "Group address for %s missing in configuration", paramname)
+            _LOGGER.debug("{}={}".format(paramname, addr))
             addr = parse_group_address(addr)
             self.names[addr] = name
 
@@ -248,6 +249,7 @@ class KNXMultiAddressDevice(Entity):
         for name in optional:
             paramname = '{}{}'.format(name, '_address')
             addr = self._config.config.get(paramname)
+            _LOGGER.debug("{}={}".format(paramname, addr))
             if addr:
                 try:
                     addr = parse_group_address(addr)
