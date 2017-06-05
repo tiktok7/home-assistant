@@ -305,7 +305,7 @@ class KNXMultiAddressDevice(Entity):
         except KNXException:
             _LOGGER.exception("Unable to read from KNX address: %s", addr)
             return False
-        _LOGGER.debug("get {}({}):{}".format(name, addr, res))
+        _LOGGER.debug("get {}({:x}):{}".format(name, addr, res))
         return res
 
     def set_value(self, name, value):
@@ -327,5 +327,5 @@ class KNXMultiAddressDevice(Entity):
             _LOGGER.exception("Unable to write to KNX address: %s", addr)
             return False
 
-        _LOGGER.debug("set {}({}):{}".format(name, addr, value))
+        _LOGGER.debug("set {}({:x}):{}".format(name, addr, value))
         return True

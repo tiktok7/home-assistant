@@ -85,6 +85,15 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
         """Return the position we are trying to reach. 0 - 100"""
         return self._target_pos
 
+    def set_percentage(self, name, percentage):
+        value = percentage * 255 // 100
+        self.set_int_value(name, value)
+
+    def get_percentage(self, name):
+        value = self.get_int_value(name)
+        percentage = value * 100 // 255
+        return percentage
+
     def set_int_value(self, name, value, num_bytes=1):
         # KNX packets are big endian
         b_value = value.to_bytes(num_bytes, byteorder='big')
@@ -94,10 +103,11 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
         # KNX packets are big endian
         sum = 0
         raw_value = self.value(name)
-        if isinstance(raw_value, list):
+        if isinstance(raw_value, list) or isinstance(raw_value, bytes):
             for val in raw_value:
                 sum *= 256
                 sum += val
+
         return sum
 
     def set_cover_position(self, **kwargs):
@@ -107,7 +117,7 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
             return
 
         self._target_pos = position
-        self.set_int_value('setposition', position)
+        self.set_percentage('setposition', position)
         _LOGGER.debug(
             "{}: Set target position to {:d}".format(
                 self.name, position
@@ -117,10 +127,10 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
     def update(self):
         """Update device state."""
         super().update()
-        value = self.get_int_value('getposition')
+        value = self.get_percentage('getposition')
         if value is not None:
             self._current_pos = value
-        _LOGGER.debug("{}: position = {}".format(self.name, value))
+        _LOGGER.debug("{}: position = {:d}".format(self.name, value))
 
     def open_cover(self, **kwargs):
         """Open the cover."""
