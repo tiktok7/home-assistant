@@ -86,12 +86,12 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
         return self._target_pos
 
     def set_percentage(self, name, percentage):
-        value = percentage * 255 // 100
+        value = (100 - percentage) * 255 // 100
         self.set_int_value(name, value)
 
     def get_percentage(self, name):
         value = self.get_int_value(name)
-        percentage = value * 100 // 255
+        percentage = (255 - value) * 100 // 255
         return percentage
 
     def set_int_value(self, name, value, num_bytes=1):
