@@ -56,6 +56,7 @@ SUN_EVENT_SUNRISE = 'sunrise'
 # #### CONFIG ####
 CONF_ABOVE = 'above'
 CONF_ACCESS_TOKEN = 'access_token'
+CONF_ADDRESS = 'address'
 CONF_AFTER = 'after'
 CONF_ALIAS = 'alias'
 CONF_API_KEY = 'api_key'
@@ -413,3 +414,4 @@ VOLUME = 'volume'  # type: str
 TEMPERATURE = 'temperature'  # type: str
 SPEED_MS = 'speed_ms'  # type: str
 ILLUMINANCE = 'illuminance'  # type: str
+PERCENTAGE = 'percentage'  # type: str

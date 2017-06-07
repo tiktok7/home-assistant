@@ -6,7 +6,7 @@ https://home-assistant.io/components/knx/
 """
 from homeassistant.const import (TEMP_CELSIUS, TEMPERATURE, CONF_TYPE,
                                  ILLUMINANCE, SPEED_MS, CONF_MINIMUM,
-                                 CONF_MAXIMUM)
+                                 PERCENTAGE, CONF_MAXIMUM)
 from homeassistant.components.knx import (KNXConfig, KNXGroupAddress)
 
 
@@ -17,6 +17,9 @@ SPEED_METERPERSECOND = "m/s"  # type: str
 
 # Illuminance units
 ILLUMINANCE_LUX = "lx"  # type: str
+
+# Percentage units
+PERCENTAGE_UNIT = "%"
 
 #  Predefined Minimum, Maximum Values for Sensors
 #  Temperature as defined in KNX Standard 3.10 - 9.001 DPT_Value_Temp
@@ -30,6 +33,10 @@ KNX_LUX_MAX = 670760
 #  Speed m/s as defined in KNX Standard 3.10 - 9.005 DPT_Value_Wsp
 KNX_SPEED_MS_MIN = 0
 KNX_SPEED_MS_MAX = 670760
+
+#  Percentage as defined in KNX Standard 3.10 - 5.001 DPT_Scaling
+KNX_PERCENT_MIN = 0
+KNX_PERCENT_MAX = 100
 
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
@@ -68,6 +75,16 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
             KNXSensorFloatClass(hass, KNXConfig(config), ILLUMINANCE_LUX,
                                 minimum_value, maximum_value)
         ])
+    # Add KNX Illuminance Sensors(Lux)
+    # KNX Datapoint 9.004 DPT_Value_Lux
+    elif config[CONF_TYPE] == PERCENTAGE:
+        minimum_value, maximum_value = \
+            update_and_define_min_max(config, KNX_PERCENT_MIN, KNX_PERCENT_MAX)
+
+        add_entities([
+            KNXSensorDPTScalingClass(hass, KNXConfig(config), PERCENTAGE_UNIT,
+                                     minimum_value, maximum_value)
+        ])
 
 
 def update_and_define_min_max(config, minimum_default,
@@ -84,31 +101,23 @@ def update_and_define_min_max(config, minimum_default,
     return minimum_value, maximum_value
 
 
-class KNXSensorBaseClass():
+class KNXSensorBaseClass(KNXGroupAddress):
     """Sensor Base Class for all KNX Sensors."""
-
-    @property
-    def cache(self):
-        """We don't want to cache any Sensor Value."""
-        return False
-
-
-class KNXSensorFloatClass(KNXGroupAddress, KNXSensorBaseClass):
-    """
-    Base Implementation of a 2byte Floating Point KNX Telegram.
-
-    Defined in KNX 3.7.2 - 3.10
-    """
 
     def __init__(self, hass, config, unit_of_measurement, minimum_sensor_value,
                  maximum_sensor_value):
-        """Initialize a KNX Float Sensor."""
+        """Initialize a KNX Sensor."""
         self._unit_of_measurement = unit_of_measurement
         self._minimum_value = minimum_sensor_value
         self._maximum_value = maximum_sensor_value
         self._value = None
 
         KNXGroupAddress.__init__(self, hass, config)
+
+    @property
+    def cache(self):
+        """We don't want to cache any Sensor Value."""
+        return False
 
     @property
     def state(self):
@@ -120,15 +129,46 @@ class KNXSensorFloatClass(KNXGroupAddress, KNXSensorBaseClass):
         """Return the defined Unit of Measurement for the KNX Sensor."""
         return self._unit_of_measurement
 
+    def convert(self, value):
+        return value
+
     def update(self):
         """Update KNX sensor."""
-        from knxip.conversion import knx2_to_float
 
         super().update()
 
         self._value = None
 
         if self._data:
-            value = 0 if self._data == 0 else knx2_to_float(self._data)
+            if self._data == 0:
+                value = 0
+            else:
+                value = self.convert(self._data)
             if self._minimum_value <= value <= self._maximum_value:
                 self._value = value
+
+
+class KNXSensorDPTScalingClass(KNXSensorBaseClass):
+    """
+    Base Implementation of a 1byte percentage scaled KNX Telegram.
+
+    Defined in KNX 3.7.2 - 3.10
+    """
+    def convert(self, value):
+        """conversion for scaled byte values"""
+        value = int.from_bytes(value, byteorder='big')
+        return (value * 100 // 255)
+
+
+class KNXSensorFloatClass(KNXSensorBaseClass):
+    """
+    Base Implementation of a 2byte Floating Point KNX Telegram.
+
+    Defined in KNX 3.7.2 - 3.10
+    """
+
+    def convert(self, value):
+        """conversion for 2 byte floating point values"""
+        from knxip.conversion import knx2_to_float
+
+        return knx2_to_float(self._data)
