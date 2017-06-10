@@ -14,10 +14,10 @@ import logging
 import voluptuous as vol
 
 from homeassistant.components.cover import (
-    CoverDevice, PLATFORM_SCHEMA, ATTR_POSITION
+    CoverDevice, PLATFORM_SCHEMA, ATTR_POSITION, DEVICE_CLASSES_SCHEMA
 )
 from homeassistant.components.knx import (KNXConfig, KNXMultiAddressDevice)
-from homeassistant.const import (CONF_NAME)
+from homeassistant.const import (CONF_NAME, CONF_DEVICE_CLASS)
 import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
@@ -36,6 +36,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_SETPOSITION_ADDRESS): cv.string,
     vol.Optional(CONF_GETPOSITION_ADDRESS): cv.string,
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+    vol.Optional(CONF_DEVICE_CLASS): DEVICE_CLASSES_SCHEMA
 })
 
 
@@ -54,7 +55,7 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
             ['updown', 'stop'],  # required
             optional=['setposition', 'getposition']
         )
-
+        self._device_class = config.config.get(CONF_DEVICE_CLASS)
         self._hass = hass
         self._current_pos = None
 
@@ -85,31 +86,6 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
         """Return the position we are trying to reach. 0 - 100"""
         return self._target_pos
 
-    def set_percentage(self, name, percentage):
-        value = (100 - percentage) * 255 // 100
-        self.set_int_value(name, value)
-
-    def get_percentage(self, name):
-        value = self.get_int_value(name)
-        percentage = (255 - value) * 100 // 255
-        return percentage
-
-    def set_int_value(self, name, value, num_bytes=1):
-        # KNX packets are big endian
-        b_value = value.to_bytes(num_bytes, byteorder='big')
-        self.set_value(name, list(b_value))
-
-    def get_int_value(self, name):
-        # KNX packets are big endian
-        sum = 0
-        raw_value = self.value(name)
-        if isinstance(raw_value, list) or isinstance(raw_value, bytes):
-            for val in raw_value:
-                sum *= 256
-                sum += val
-
-        return sum
-
     def set_cover_position(self, **kwargs):
         """Set new target position."""
         position = kwargs.get(ATTR_POSITION)
@@ -119,9 +95,8 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
         self._target_pos = position
         self.set_percentage('setposition', position)
         _LOGGER.debug(
-            "{}: Set target position to {:d}".format(
-                self.name, position
-            )
+            "%s: Set target position to %d",
+            self.name, position
         )
 
     def update(self):
@@ -130,19 +105,27 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
         value = self.get_percentage('getposition')
         if value is not None:
             self._current_pos = value
-        _LOGGER.debug("{}: position = {:d}".format(self.name, value))
+            _LOGGER.debug(
+                "%s: position = %d",
+                self.name, value
+            )
 
     def open_cover(self, **kwargs):
         """Open the cover."""
-        _LOGGER.debug("{}: open: updown = 0".format(self.name))
+        _LOGGER.debug("%s: open: updown = 0", self.name)
         self.set_int_value('updown', 0)
 
     def close_cover(self, **kwargs):
         """Close the cover."""
-        _LOGGER.debug("{}: open: updown = 1".format(self.name))
+        _LOGGER.debug("%s: open: updown = 1", self.name)
         self.set_int_value('updown', 1)
 
     def stop_cover(self, **kwargs):
         """Stop the cover movement."""
-        _LOGGER.debug("{}: stop: stop = 1".format(self.name))
+        _LOGGER.debug("%s: stop: stop = 1", self.name)
         self.set_int_value('stop', 1)
+
+    @property
+    def device_class(self):
+        """Return the class of this device, from component DEVICE_CLASSES."""
+        return self._device_class

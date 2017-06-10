@@ -287,6 +287,49 @@ class KNXMultiAddressDevice(Entity):
                 return True
         return False
 
+    def set_percentage(self, name, percentage):
+        """set a percentage in knx for a given attribute
+
+        DPT_Scaling / DPT 5.001 is a single byte scaled percentage
+        """
+        percentage = abs(percentage)  # only accept positive values
+        scaled_value = percentage * 255 / 100
+        value = min(255, scaled_value)
+        self.set_int_value(name, value)
+
+    def get_percentage(self, name):
+        """get a percentage from knx for a given attribute
+
+        DPT_Scaling / DPT 5.001 is a single byte scaled percentage
+        """
+        value = self.get_int_value(name)
+        percentage = round(value * 100 / 255)
+        return percentage
+
+    def set_int_value(self, name, value, num_bytes=1):
+        """set an integer value for a given attribute"""
+        # KNX packets are big endian
+        value = round(value)      # only accept integers
+        b_value = value.to_bytes(num_bytes, byteorder='big')
+        self.set_value(name, list(b_value))
+
+    def get_int_value(self, name):
+        """get an integer value for a given attribute"""
+        # KNX packets are big endian
+        sum = 0
+        raw_value = self.value(name)
+        try:
+            # convert raw value in bytes
+            for val in raw_value:
+                sum *= 256
+                sum += val
+        except:
+            # pknx returns a different type when the read request was
+            # unsuccessful
+            pass
+
+        return sum
+
     def value(self, name):
         """Return the value to a given named attribute."""
         from knxip.core import KNXException
@@ -305,7 +348,6 @@ class KNXMultiAddressDevice(Entity):
         except KNXException:
             _LOGGER.exception("Unable to read from KNX address: %s", addr)
             return False
-        _LOGGER.debug("get {}({:x}):{}".format(name, addr, res))
         return res
 
     def set_value(self, name, value):
@@ -318,7 +360,6 @@ class KNXMultiAddressDevice(Entity):
                 addr = attributeaddress
 
         if addr is None:
-            _LOGGER.exception("Attribute %s undefined", name)
             return False
 
         try:
@@ -327,5 +368,4 @@ class KNXMultiAddressDevice(Entity):
             _LOGGER.exception("Unable to write to KNX address: %s", addr)
             return False
 
-        _LOGGER.debug("set {}({:x}):{}".format(name, addr, value))
         return True
