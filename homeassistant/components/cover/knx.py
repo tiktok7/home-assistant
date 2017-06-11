@@ -51,7 +51,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 
 
 class KNXCover(KNXMultiAddressDevice, CoverDevice):
-    """Representation of a KNX cover. e.g. a rollershutter"""
+    """Representation of a KNX cover. e.g. a rollershutter."""
 
     def __init__(self, hass, config):
         """Initialize the cover."""
@@ -63,6 +63,7 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
         self._device_class = config.config.get(CONF_DEVICE_CLASS)
         self._hass = hass
         self._current_pos = None
+        self._target_pos = None
 
     @property
     def should_poll(self):
@@ -88,7 +89,7 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
 
     @property
     def target_position(self):
-        """Return the position we are trying to reach. 0 - 100"""
+        """Return the position we are trying to reach: 0 - 100."""
         return self._target_pos
 
     def set_cover_position(self, **kwargs):

@@ -231,25 +231,26 @@ class KNXMultiAddressDevice(Entity):
         self._data = None
         _LOGGER.debug("Initalizing KNX multi address device")
 
+        settings = self._config.config
         # parse required addresses
         for name in required:
             _LOGGER.info(name)
             paramname = '{}{}'.format(name, '_address')
-            addr = self._config.config.get(paramname)
+            addr = settings.get(paramname)
             if addr is None:
                 _LOGGER.exception(
                     "Required KNX group address %s missing", paramname)
                 raise KNXException(
                     "Group address for %s missing in configuration", paramname)
-            _LOGGER.debug("{}={}".format(paramname, addr))
+            _LOGGER.debug("%s: %s=%s", settings.get('name'), paramname, addr)
             addr = parse_group_address(addr)
             self.names[addr] = name
 
         # parse optional addresses
         for name in optional:
             paramname = '{}{}'.format(name, '_address')
-            addr = self._config.config.get(paramname)
-            _LOGGER.debug("{}={}".format(paramname, addr))
+            addr = settings.get(paramname)
+            _LOGGER.debug("%s: %s=%s", settings.get('name'), paramname, addr)
             if addr:
                 try:
                     addr = parse_group_address(addr)
@@ -288,7 +289,7 @@ class KNXMultiAddressDevice(Entity):
         return False
 
     def set_percentage(self, name, percentage):
-        """set a percentage in knx for a given attribute
+        """Set a percentage in knx for a given attribute.
 
         DPT_Scaling / DPT 5.001 is a single byte scaled percentage
         """
@@ -298,7 +299,7 @@ class KNXMultiAddressDevice(Entity):
         self.set_int_value(name, value)
 
     def get_percentage(self, name):
-        """get a percentage from knx for a given attribute
+        """Get a percentage from knx for a given attribute.
 
         DPT_Scaling / DPT 5.001 is a single byte scaled percentage
         """
@@ -307,28 +308,27 @@ class KNXMultiAddressDevice(Entity):
         return percentage
 
     def set_int_value(self, name, value, num_bytes=1):
-        """set an integer value for a given attribute"""
+        """Set an integer value for a given attribute."""
         # KNX packets are big endian
         value = round(value)      # only accept integers
         b_value = value.to_bytes(num_bytes, byteorder='big')
         self.set_value(name, list(b_value))
 
     def get_int_value(self, name):
-        """get an integer value for a given attribute"""
+        """Get an integer value for a given attribute."""
         # KNX packets are big endian
-        sum = 0
+        summed_value = 0
         raw_value = self.value(name)
         try:
             # convert raw value in bytes
             for val in raw_value:
-                sum *= 256
-                sum += val
-        except:
-            # pknx returns a different type when the read request was
-            # unsuccessful
+                summed_value *= 256
+                summed_value += val
+        except TypeError:
+            # pknx returns a non-iterable type for unsuccessful reads
             pass
 
-        return sum
+        return summed_value
 
     def value(self, name):
         """Return the value to a given named attribute."""
