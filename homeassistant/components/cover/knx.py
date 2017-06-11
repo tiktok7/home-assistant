@@ -1,6 +1,11 @@
 """
 Support for KNX covers.
 
+Tested with an MDT roller shutter
+http://www.mdt.de/download/MDT_THB_Jalousieaktor_02.pdf
+
+Example configuration:
+
 cover:
   - platform: knx
     updown_address: 9/0/0
