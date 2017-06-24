@@ -51,7 +51,7 @@ def setup(hass, config):
         res = KNXTUNNEL.connect()
         _LOGGER.debug("Res = %s", res)
         if not res:
-            _LOGGER.exception("Could not connect to KNX/IP interface %s", host)
+            _LOGGER.error("Could not connect to KNX/IP interface %s", host)
             return False
 
     except KNXException as ex:
@@ -229,20 +229,44 @@ class KNXMultiAddressDevice(Entity):
         self._config = config
         self._state = False
         self._data = None
-        _LOGGER.debug("Initalizing KNX multi address device")
+        _LOGGER.debug(
+            "%s: initalizing KNX multi address device",
+            self.name
+        )
 
         settings = self._config.config
+        if config.address:
+            _LOGGER.debug(
+                "%s: base address: address=%s",
+                self.name, settings.get('address')
+            )
+            self.names[config.address] = 'base'
+        if config.state_address:
+            _LOGGER.debug(
+                "%s, state address: state_address=%s",
+                self.name, settings.get('state_address')
+            )
+            self.names[config.state_address] = 'state'
+
         # parse required addresses
         for name in required:
-            _LOGGER.info(name)
             paramname = '{}{}'.format(name, '_address')
             addr = settings.get(paramname)
             if addr is None:
-                _LOGGER.exception(
-                    "Required KNX group address %s missing", paramname)
+                _LOGGER.error(
+                    "%s: Required KNX group address %s missing",
+                    self.name, paramname
+                )
                 raise KNXException(
-                    "Group address for %s missing in configuration", paramname)
-            _LOGGER.debug("%s: %s=%s", settings.get('name'), paramname, addr)
+                    "%s: Group address for {} missing in "
+                    "configuration for {}".format(
+                        self.name, paramname
+                    )
+                )
+            _LOGGER.debug(
+                "%s: (required parameter) %s=%s",
+                self.name, paramname, addr
+            )
             addr = parse_group_address(addr)
             self.names[addr] = name
 
@@ -250,12 +274,18 @@ class KNXMultiAddressDevice(Entity):
         for name in optional:
             paramname = '{}{}'.format(name, '_address')
             addr = settings.get(paramname)
-            _LOGGER.debug("%s: %s=%s", settings.get('name'), paramname, addr)
+            _LOGGER.debug(
+                "%s: (optional parameter) %s=%s",
+                self.name, paramname, addr
+            )
             if addr:
                 try:
                     addr = parse_group_address(addr)
                 except KNXException:
-                    _LOGGER.exception("Cannot parse group address %s", addr)
+                    _LOGGER.exception(
+                        "%s: cannot parse group address %s",
+                        self.name, addr
+                    )
                 self.names[addr] = name
 
     @property
@@ -340,13 +370,21 @@ class KNXMultiAddressDevice(Entity):
                 addr = attributeaddress
 
         if addr is None:
-            _LOGGER.exception("Attribute %s undefined", name)
+            _LOGGER.error("%s: attribute '%s' undefined",
+                          self.name, name)
+            _LOGGER.debug(
+                "%s: defined attributes: %s",
+                self.name, str(self.names)
+            )
             return False
 
         try:
             res = KNXTUNNEL.group_read(addr, use_cache=self.cache)
         except KNXException:
-            _LOGGER.exception("Unable to read from KNX address: %s", addr)
+            _LOGGER.exception(
+                "%s: unable to read from KNX address: %s",
+                self.name, addr
+            )
             return False
 
         return res
@@ -361,13 +399,21 @@ class KNXMultiAddressDevice(Entity):
                 addr = attributeaddress
 
         if addr is None:
-            _LOGGER.exception("Attribute %s undefined", name)
+            _LOGGER.error("%s: attribute '%s' undefined",
+                          self.name, name)
+            _LOGGER.debug(
+                "%s: defined attributes: %s",
+                self.name, str(self.names)
+            )
             return False
 
         try:
             KNXTUNNEL.group_write(addr, value)
         except KNXException:
-            _LOGGER.exception("Unable to write to KNX address: %s", addr)
+            _LOGGER.exception(
+                "%s: unable to write to KNX address: %s",
+                self.name, addr
+            )
             return False
 
         return True
