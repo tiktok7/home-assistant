@@ -127,7 +127,10 @@ class KNXGroupAddress(Entity):
         self._config = config
         self._state = False
         self._data = None
-        _LOGGER.debug("Initalizing KNX group address %s", self.address)
+        _LOGGER.debug(
+            "Initalizing KNX group address for %s (%s)",
+            self.name, self.address
+        )
 
         def handle_knx_message(addr, data):
             """Handle an incoming KNX frame.
