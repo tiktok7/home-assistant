@@ -201,11 +201,15 @@ class KNXGroupAddress(Entity):
                 self._data = res
             else:
                 _LOGGER.debug(
-                    "Unable to read from KNX address: %s (None)", self.address)
+                    "%s: unable to read from KNX address: %s (None)",
+                    self.name, self.address
+                )
 
         except KNXException:
             _LOGGER.exception(
-                "Unable to read from KNX address: %s", self.address)
+                "%s: unable to read from KNX address: %s",
+                self.name, self.address
+            )
             return False
 
 

@@ -21,6 +21,9 @@ CONF_STATE_ADDRESS = 'state_address'
 CONF_BRIGHTNESS_ADDRESS = 'brightness_address'
 CONF_DIMMER_ADDRESS = 'dimmer_address'
 
+CONF_MSG_BRIGHTNESS = \
+    "Missing either dimmer address or brightness address."
+
 DEFAULT_NAME = 'KNX Light'
 DEPENDENCIES = ['knx']
 
@@ -28,8 +31,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_ADDRESS): cv.string,
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     vol.Optional(CONF_STATE_ADDRESS): cv.string,
-    vol.Optional(CONF_BRIGHTNESS_ADDRESS): cv.string,
-    vol.Optional(CONF_DIMMER_ADDRESS): cv.string,
+    vol.Inclusive(CONF_BRIGHTNESS_ADDRESS, 'brightness'): cv.string,
+    vol.Inclusive(CONF_DIMMER_ADDRESS, 'brightness'): cv.string,
 })
 
 
@@ -88,10 +91,11 @@ class KNXLight(KNXMultiAddressDevice, Light):
             self._state = value
             _LOGGER.debug("%s: read state = %d", self.name, value)
 
-        value = self.get_int_value('brightness')
-        if value is not None:
-            self._brightness = value
-            _LOGGER.debug("%s: read brightness = %d", self.name, value)
+        if self.supported_features & SUPPORT_BRIGHTNESS:
+            value = self.get_int_value('brightness')
+            if value is not None:
+                self._brightness = value
+                _LOGGER.debug("%s: read brightness = %d", self.name, value)
 
     def turn_on(self, **kwargs):
         """Turn the switch on.
