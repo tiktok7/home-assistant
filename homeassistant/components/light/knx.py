@@ -31,8 +31,12 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_ADDRESS): cv.string,
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     vol.Optional(CONF_STATE_ADDRESS): cv.string,
-    vol.Inclusive(CONF_BRIGHTNESS_ADDRESS, 'brightness'): cv.string,
-    vol.Inclusive(CONF_DIMMER_ADDRESS, 'brightness'): cv.string,
+    vol.Inclusive(
+        CONF_BRIGHTNESS_ADDRESS, 'brightness', CONF_MSG_BRIGHTNESS
+    ): cv.string,
+    vol.Inclusive(
+        CONF_DIMMER_ADDRESS, 'brightness', CONF_MSG_BRIGHTNESS
+    ): cv.string,
 })
 
 
@@ -71,11 +75,12 @@ class KNXLight(KNXMultiAddressDevice, Light):
 
     @property
     def brightness(self):
+        """Return the brightness level of the light."""
         return self._brightness
 
     @property
     def is_on(self):
-        """Return true if the binary sensor is on."""
+        """Return true if the light is on."""
         return self._state
 
     @property
@@ -86,10 +91,12 @@ class KNXLight(KNXMultiAddressDevice, Light):
     def update(self):
         """Update device state."""
         super().update()
-        value = self.get_int_value('state')
-        if value:
-            self._state = value
-            _LOGGER.debug("%s: read state = %d", self.name, value)
+
+        if self.has_attribute('state'):
+            value = self.get_int_value('state')
+            if value is not None:
+                self._state = value
+                _LOGGER.debug("%s: read state = %d", self.name, value)
 
         if self.supported_features & SUPPORT_BRIGHTNESS:
             value = self.get_int_value('brightness')
@@ -98,7 +105,7 @@ class KNXLight(KNXMultiAddressDevice, Light):
                 _LOGGER.debug("%s: read brightness = %d", self.name, value)
 
     def turn_on(self, **kwargs):
-        """Turn the switch on.
+        """Turn the light on.
 
         This sends a value 1 to the group address of the device.  It also
         writes the brightness if either the brightness or brightness_pct
@@ -110,7 +117,7 @@ class KNXLight(KNXMultiAddressDevice, Light):
             self.name, str(kwargs)
         )
         self.set_int_value('base', 1)
-        self._state = [1]
+        self._state = 1
 
         # dimming support
         brightness = kwargs.get(ATTR_BRIGHTNESS)
@@ -127,4 +134,4 @@ class KNXLight(KNXMultiAddressDevice, Light):
         """
         _LOGGER.debug("%s: turn off", self.name)
         self.set_int_value('base', 0)
-        self._state = [0]
+        self._state = 0
