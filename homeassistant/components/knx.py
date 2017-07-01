@@ -320,7 +320,7 @@ class KNXMultiAddressDevice(Entity):
 
         This is mostly important for optional addresses.
         """
-        for attributename, dummy_attribute in self.names.items():
+        for attributename in self.names.values():
             if attributename == name:
                 return True
         return False
@@ -333,7 +333,7 @@ class KNXMultiAddressDevice(Entity):
         percentage = abs(percentage)  # only accept positive values
         scaled_value = percentage * 255 / 100
         value = min(255, scaled_value)
-        self.set_int_value(name, value)
+        return self.set_int_value(name, value)
 
     def get_percentage(self, name):
         """Get a percentage from knx for a given attribute.
@@ -349,7 +349,7 @@ class KNXMultiAddressDevice(Entity):
         # KNX packets are big endian
         value = round(value)      # only accept integers
         b_value = value.to_bytes(num_bytes, byteorder='big')
-        self.set_value(name, list(b_value))
+        return self.set_value(name, list(b_value))
 
     def get_int_value(self, name):
         """Get an integer value for a given attribute."""

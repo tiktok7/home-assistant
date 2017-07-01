@@ -21,9 +21,6 @@ CONF_STATE_ADDRESS = 'state_address'
 CONF_BRIGHTNESS_ADDRESS = 'brightness_address'
 CONF_DIMMER_ADDRESS = 'dimmer_address'
 
-CONF_MSG_BRIGHTNESS = \
-    "Missing either dimmer address or brightness address."
-
 DEFAULT_NAME = 'KNX Light'
 DEPENDENCIES = ['knx']
 
@@ -31,12 +28,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_ADDRESS): cv.string,
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     vol.Optional(CONF_STATE_ADDRESS): cv.string,
-    vol.Inclusive(
-        CONF_BRIGHTNESS_ADDRESS, 'brightness', CONF_MSG_BRIGHTNESS
-    ): cv.string,
-    vol.Inclusive(
-        CONF_DIMMER_ADDRESS, 'brightness', CONF_MSG_BRIGHTNESS
-    ): cv.string,
+    vol.Optional(CONF_BRIGHTNESS_ADDRESS): cv.string,
+    vol.Optional(CONF_DIMMER_ADDRESS): cv.string,
 })
 
 
@@ -63,9 +56,8 @@ class KNXLight(KNXMultiAddressDevice, Light):
         self._brightness = None
         self._state = None
         self._supported_features = 0
-        self._supported_features |= (
-            config.config.get(CONF_DIMMER_ADDRESS) is not None and
-            SUPPORT_BRIGHTNESS)
+        if config.config.get(CONF_DIMMER_ADDRESS) is not None:
+            self._supported_features |= SUPPORT_BRIGHTNESS
         _LOGGER.debug("KNXLight config: {}".format(config.config))
 
     @property
@@ -97,12 +89,15 @@ class KNXLight(KNXMultiAddressDevice, Light):
             if value is not None:
                 self._state = value
                 _LOGGER.debug("%s: read state = %d", self.name, value)
-
-        if self.supported_features & SUPPORT_BRIGHTNESS:
+            else:
+                _LOGGER.debug("%s: failed to read state", self.name)
+        if self.has_attribute('brightness'):
             value = self.get_int_value('brightness')
             if value is not None:
                 self._brightness = value
                 _LOGGER.debug("%s: read brightness = %d", self.name, value)
+            else:
+                _LOGGER.debug("%s: failed to read brightness", self.name)
 
     def turn_on(self, **kwargs):
         """Turn the light on.
@@ -122,10 +117,15 @@ class KNXLight(KNXMultiAddressDevice, Light):
         # dimming support
         brightness = kwargs.get(ATTR_BRIGHTNESS)
         if brightness is not None:
-            _LOGGER.debug("%s: set brightness = %d", self.name, brightness)
             res = self.set_int_value('dimmer', brightness)
             if res is not None:
+                _LOGGER.debug("%s: set brightness = %d", self.name, brightness)
                 self._brightness = brightness
+            else:
+                _LOGGER.error(
+                    "%s: failed to set brightness = %d",
+                    self.name, brightness
+                )
 
     def turn_off(self, **kwargs):
         """Turn the switch off.
