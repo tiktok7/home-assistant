@@ -135,8 +135,14 @@ class KNXCover(KNXMultiAddressDevice, CoverDevice):
             position = 100-position
 
         self._target_pos = position
-        self.set_percentage('setposition', position)
-        _LOGGER.debug("%s: Set target position to %d", self.name, position)
+        res = self.set_percentage('setposition', position)
+        if res:
+            _LOGGER.debug("%s: Set target position to %d", self.name, position)
+        else:
+            _LOGGER.debug(
+                "%s: Failed to set target position to %d",
+                self.name, position
+            )
 
     def update(self):
         """Update device state."""
