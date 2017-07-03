@@ -85,12 +85,17 @@ class KNXLight(KNXMultiAddressDevice, Light):
         super().update()
 
         if self.has_attribute('state'):
-            value = self.get_int_value('state')
-            if value is not None:
-                self._state = value
-                _LOGGER.debug("%s: read state = %d", self.name, value)
-            else:
-                _LOGGER.debug("%s: failed to read state", self.name)
+            state_address = 'state'
+        else:
+            state_address = 'base'
+
+        value = self.get_int_value(state_address)
+        if value is not None:
+            self._state = value
+            _LOGGER.debug("%s: read state = %d", self.name, value)
+        else:
+            _LOGGER.debug("%s: failed to read state", self.name)
+
         if self.has_attribute('brightness'):
             value = self.get_int_value('brightness')
             if value is not None:
@@ -113,6 +118,7 @@ class KNXLight(KNXMultiAddressDevice, Light):
         )
         self.set_int_value('base', 1)
         self._state = 1
+        self._config.config['cache'] = False
 
         # dimming support
         brightness = kwargs.get(ATTR_BRIGHTNESS)
