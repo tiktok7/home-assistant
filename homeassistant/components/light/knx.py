@@ -54,7 +54,6 @@ class KNXLight(KNXMultiAddressDevice, Light):
         )
         self._hass = hass
         self._brightness = None
-        self._state = None
         self._supported_features = 0
         if config.config.get(CONF_DIMMER_ADDRESS) is not None:
             self._supported_features |= SUPPORT_BRIGHTNESS
@@ -75,29 +74,17 @@ class KNXLight(KNXMultiAddressDevice, Light):
         """Return true if the light is on."""
         return self._state
 
-    @property
-    def should_poll(self):
-        """Polling is needed for the KNX dimmer status."""
-        return True
-
     def update(self):
         """Update device state."""
         super().update()
 
-        if self.has_attribute('state'):
-            state_address = 'state'
-        else:
-            state_address = 'base'
-
-        value = self.get_int_value(state_address)
-        if value is not None:
-            self._state = value
-            _LOGGER.debug("%s: read state = %d", self.name, value)
-        else:
-            _LOGGER.debug("%s: failed to read state", self.name)
-
         if self.has_attribute('brightness'):
-            value = self.get_int_value('brightness')
+            brightness_attribute = 'brightness'
+        else:
+            brightness_attribute = 'dimmer'
+
+        if self.supported_features & SUPPORT_BRIGHTNESS:
+            value = self.get_int_value(brightness_attribute)
             if value is not None:
                 self._brightness = value
                 _LOGGER.debug("%s: read brightness = %d", self.name, value)
@@ -118,7 +105,6 @@ class KNXLight(KNXMultiAddressDevice, Light):
         )
         self.set_int_value('base', 1)
         self._state = 1
-        self._config.config['cache'] = False
 
         # dimming support
         brightness = kwargs.get(ATTR_BRIGHTNESS)
